@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import api from '../services/apiClient.js'
+import http from '../services/http.js'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -10,7 +10,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     try {
-      const { data } = await api.post('/auth/login', { username, password })
+      const { data } = await http.post('/auth/login', { username, password })
       localStorage.setItem('token', data.token)
       alert('Login exitoso')
     } catch (e) {
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   return (
     <form className="card" onSubmit={submit}>
-      <h2 style={{ marginTop: 0 }}>Login</h2>
+      <h2>Login</h2>
       <div className="grid cols-2">
         <div>
           <label>Usuario</label>
@@ -36,10 +36,8 @@ export default function LoginPage() {
           />
         </div>
       </div>
-      {error && <p style={{ color: '#f87171' }}>{error}</p>}
-      <button className="btn primary" style={{ marginTop: 12 }}>
-        Ingresar
-      </button>
+      {error && <p className="error-text">{error}</p>}
+      <button className="btn primary form-field">Ingresar</button>
     </form>
   )
 }

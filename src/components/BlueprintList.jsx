@@ -4,7 +4,7 @@ export default function BlueprintList({ items = [], onSelect }) {
     <div className="grid">
       {items.map((bp) => (
         <div key={bp.name} className="card">
-          <h3 style={{ marginTop: 0 }}>{bp.name}</h3>
+          <h3>{bp.name}</h3>
           <p>
             <strong>Autor:</strong> {bp.author}
           </p>

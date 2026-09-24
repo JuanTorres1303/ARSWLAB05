@@ -17,7 +17,7 @@ export default function BlueprintForm({ onSubmit }) {
 
   return (
     <form onSubmit={handle} className="card">
-      <h3 style={{ marginTop: 0 }}>Crear Blueprint</h3>
+      <h3>Crear Blueprint</h3>
       <div className="grid cols-2">
         <div>
           <label htmlFor="author">Autor</label>
@@ -40,7 +40,7 @@ export default function BlueprintForm({ onSubmit }) {
           />
         </div>
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div className="form-field">
         <label htmlFor="points">Puntos (JSON)</label>
         <textarea
           id="points"
@@ -50,7 +50,7 @@ export default function BlueprintForm({ onSubmit }) {
           onChange={(e) => setPointsJSON(e.target.value)}
         />
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div className="form-field">
         <button className="btn primary">Guardar</button>
       </div>
     </form>

@@ -50,13 +50,8 @@ export default function BlueprintCanvas({ id = "canvas-blueprint", points = [], 
       width={width}
       height={height}
       id={id}
-      style={{
-        background: '#0b1220',
-        border: '1px solid #334155',
-        borderRadius: 12,
-        width: '100%',
-        maxWidth: width,
-      }}
+      className="canvas-blueprint"
+      style={{ maxWidth: width }}
     />
   )
 }

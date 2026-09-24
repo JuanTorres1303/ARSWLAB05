@@ -1,27 +1,38 @@
-import axios from 'axios'
+import http from './http.js'
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
-  timeout: 8000,
-})
+function unwrap(response) {
+  const body = response.data
+  const isEnvelope = body && typeof body === 'object' && 'data' in body && ('code' in body || 'message' in body)
+  return isEnvelope ? body.data : body
+}
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+async function getAll() {
+  const response = await http.get('/blueprints')
+  return unwrap(response)
+}
 
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response && err.response.status === 401) {
-      // Optionally redirect to login or clear token
-      localStorage.removeItem('token')
+async function getByAuthor(author) {
+  try {
+    const response = await http.get(`/blueprints/${encodeURIComponent(author)}`)
+    return unwrap(response)
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
+      return []
     }
-    return Promise.reject(err)
-  },
-)
+    throw err
+  }
+}
 
-export default api
+async function getByAuthorAndName(author, name) {
+  const response = await http.get(
+    `/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`,
+  )
+  return unwrap(response)
+}
+
+async function create(payload) {
+  const response = await http.post('/blueprints', payload)
+  return unwrap(response)
+}
+
+export default { getAll, getByAuthor, getByAuthorAndName, create }

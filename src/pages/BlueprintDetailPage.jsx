@@ -21,14 +21,14 @@ export default function BlueprintDetailPage() {
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>{bp.name}</h2>
+      <h2>{bp.name}</h2>
       <p>
         <strong>Autor:</strong> {bp.author}
       </p>
       <p>
         <strong>Puntos:</strong> {bp.points?.length || 0}
       </p>
-      <svg width="400" height="200" style={{ background: '#0b1220', borderRadius: 12 }}>
+      <svg width="400" height="200" className="canvas-frame">
         {bp.points?.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r="4" />
         ))}
