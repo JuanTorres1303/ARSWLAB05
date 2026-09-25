@@ -46,7 +46,7 @@ export default function BlueprintsPage() {
   }
 
   const openBlueprint = (bp) => {
-    const target = { author: bp.author, name: bp.name }
+    const target = { author: bp.author || selectedAuthor, name: bp.name }
     setSelectedBlueprint(target)
     dispatch(fetchBlueprint(target))
   }
@@ -85,6 +85,9 @@ export default function BlueprintsPage() {
                 ))}
               </select>
             </div>
+          )}
+          {status.authors === 'unsupported' && (
+            <p>Selector de autores no disponible con este backend.</p>
           )}
         </div>
 
@@ -136,6 +139,7 @@ export default function BlueprintsPage() {
 
         <div className="card">
           <h3>Top 5 blueprints por cantidad de puntos</h3>
+          {status.authors === 'unsupported' && <p>No disponible con este backend.</p>}
           {status.authors === 'failed' && error.authors && (
             <div className="error-banner">
               <span>Error al cargar el catálogo: {error.authors}</span>
@@ -144,10 +148,10 @@ export default function BlueprintsPage() {
               </button>
             </div>
           )}
-          {status.authors !== 'failed' && !topBlueprints.length && (
+          {status.authors === 'succeeded' && !topBlueprints.length && (
             <p>Aún no hay datos suficientes.</p>
           )}
-          {status.authors !== 'failed' && !!topBlueprints.length && (
+          {status.authors === 'succeeded' && !!topBlueprints.length && (
             <div className="table-wrap">
               <table className="table">
                 <thead>

@@ -1,18 +1,34 @@
 import { useState } from 'react'
 
+function validate(author, name, pointsJSON) {
+  const errors = {}
+  if (!author.trim()) errors.author = 'El autor es obligatorio'
+  if (!name.trim()) errors.name = 'El nombre es obligatorio'
+
+  let points = null
+  try {
+    const parsed = JSON.parse(pointsJSON)
+    if (!Array.isArray(parsed)) throw new Error('El JSON de puntos debe ser un arreglo')
+    points = parsed
+  } catch {
+    errors.points = 'El JSON de puntos no es válido'
+  }
+
+  return { errors, points }
+}
+
 export default function BlueprintForm({ onSubmit }) {
   const [author, setAuthor] = useState('')
   const [name, setName] = useState('')
   const [pointsJSON, setPointsJSON] = useState('[{"x":10,"y":10},{"x":40,"y":60}]')
+  const [errors, setErrors] = useState({})
 
   const handle = (e) => {
     e.preventDefault()
-    try {
-      const points = JSON.parse(pointsJSON)
-      onSubmit({ author, name, points })
-    } catch (e) {
-      alert('JSON de puntos inválido')
-    }
+    const { errors: nextErrors, points } = validate(author, name, pointsJSON)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+    onSubmit({ author, name, points })
   }
 
   return (
@@ -28,6 +44,7 @@ export default function BlueprintForm({ onSubmit }) {
             onChange={(e) => setAuthor(e.target.value)}
             placeholder="juan.perez"
           />
+          {errors.author && <p className="error-text">{errors.author}</p>}
         </div>
         <div>
           <label htmlFor="name">Nombre</label>
@@ -38,6 +55,7 @@ export default function BlueprintForm({ onSubmit }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="mi-dibujo"
           />
+          {errors.name && <p className="error-text">{errors.name}</p>}
         </div>
       </div>
       <div className="form-field">
@@ -49,6 +67,7 @@ export default function BlueprintForm({ onSubmit }) {
           value={pointsJSON}
           onChange={(e) => setPointsJSON(e.target.value)}
         />
+        {errors.points && <p className="error-text">{errors.points}</p>}
       </div>
       <div className="form-field">
         <button className="btn primary">Guardar</button>

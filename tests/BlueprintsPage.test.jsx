@@ -105,7 +105,10 @@ describe('BlueprintsPage', () => {
       { author: 'c', name: 'p5', points: new Array(1).fill({ x: 0, y: 0 }) },
       { author: 'c', name: 'p6', points: new Array(3).fill({ x: 0, y: 0 }) },
     ]
-    const store = makeStore({ all })
+    const store = makeStore({
+      all,
+      status: { authors: 'succeeded', byAuthor: 'idle', current: 'idle' },
+    })
     render(
       <Provider store={store}>
         <BlueprintsPage />
@@ -139,7 +142,10 @@ describe('BlueprintsPage', () => {
       { author: 'a', name: 'p1', points: new Array(2).fill({ x: 0, y: 0 }) },
       { author: 'a', name: 'p2', points: new Array(6).fill({ x: 0, y: 0 }) },
     ]
-    const store = makeStore({ all })
+    const store = makeStore({
+      all,
+      status: { authors: 'succeeded', byAuthor: 'idle', current: 'idle' },
+    })
     const spy = vi.spyOn(store, 'dispatch')
     render(
       <Provider store={store}>
@@ -174,6 +180,43 @@ describe('BlueprintsPage', () => {
     fireEvent.click(screen.getByText(/Reintentar/i))
 
     expect(spy).toHaveBeenCalledWith({ type: 'blueprints/fetchAuthors' })
+  })
+
+  it('muestra "No disponible con este backend" cuando fetchAuthors no está soportado (405)', () => {
+    const store = makeStore({
+      status: { authors: 'unsupported', byAuthor: 'idle', current: 'idle' },
+    })
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    expect(screen.getByText('No disponible con este backend.')).toBeInTheDocument()
+    expect(screen.getByText(/Selector de autores no disponible/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Aún no hay datos suficientes/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Ocurrió un error inesperado/i)).not.toBeInTheDocument()
+  })
+
+  it('al abrir una fila sin "author" (datos del backend real) usa el autor buscado', () => {
+    const store = makeStore({
+      byAuthor: { jdoe: [{ id: 'b1', name: 'Plano de jdoe' }] },
+    })
+    const spy = vi.spyOn(store, 'dispatch')
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+    fireEvent.click(screen.getByText(/Open/i))
+
+    expect(spy).toHaveBeenCalledWith({
+      type: 'blueprints/fetchBlueprint',
+      payload: { author: 'jdoe', name: 'Plano de jdoe' },
+    })
   })
 
   it('esconde "Total user points" antes de buscar un autor', () => {

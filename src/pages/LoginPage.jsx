@@ -1,19 +1,29 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import http from '../services/http.js'
+import { extractToken, setToken } from '../auth/session.js'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const submit = async (e) => {
     e.preventDefault()
     setError(null)
     try {
       const { data } = await http.post('/auth/login', { username, password })
-      localStorage.setItem('token', data.token)
-      alert('Login exitoso')
-    } catch (e) {
+      const token = extractToken(data)
+      if (!token) {
+        setError('La respuesta del servidor no incluyó un token válido')
+        return
+      }
+      setToken(token)
+      const redirectTo = location.state?.from?.pathname || '/'
+      navigate(redirectTo, { replace: true })
+    } catch (err) {
       setError('Credenciales inválidas o servidor no disponible')
     }
   }
@@ -23,12 +33,18 @@ export default function LoginPage() {
       <h2>Login</h2>
       <div className="grid cols-2">
         <div>
-          <label>Usuario</label>
-          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <label htmlFor="username">Usuario</label>
+          <input
+            id="username"
+            className="input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
         </div>
         <div>
-          <label>Contraseña</label>
+          <label htmlFor="password">Contraseña</label>
           <input
+            id="password"
             type="password"
             className="input"
             value={password}

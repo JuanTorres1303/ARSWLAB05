@@ -32,6 +32,24 @@ describe('blueprints slice', () => {
       expect(state.authors).toEqual(['jdoe', 'msmith'])
       expect(state.all).toEqual(items)
     })
+
+    it('rejected con { unsupported: true } marca status.authors como "unsupported" sin error visible', () => {
+      const action = fetchAuthors.rejected(new Error('405'), 'reqId', undefined, {
+        unsupported: true,
+      })
+      const state = reducer(undefined, action)
+      expect(state.status.authors).toBe('unsupported')
+      expect(state.error.authors).toBeNull()
+    })
+
+    it('rejected con un error normal marca status.authors como "failed" y guarda el mensaje', () => {
+      const action = fetchAuthors.rejected(new Error('network down'), 'reqId', undefined, {
+        message: 'No se pudo conectar con el servidor',
+      })
+      const state = reducer(undefined, action)
+      expect(state.status.authors).toBe('failed')
+      expect(state.error.authors).toBe('No se pudo conectar con el servidor')
+    })
   })
 
   describe('fetchByAuthor', () => {

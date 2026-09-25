@@ -12,6 +12,16 @@ describe('toFriendlyErrorMessage', () => {
     expect(toFriendlyErrorMessage(error)).toBe('Tu sesión expiró, inicia sesión de nuevo')
   })
 
+  it('traduce un 400 a un mensaje de datos inválidos', () => {
+    const error = { message: 'Request failed with status code 400', response: { status: 400 } }
+    expect(toFriendlyErrorMessage(error)).toBe('Datos inválidos: revisa autor, nombre y puntos')
+  })
+
+  it('traduce un 403 a un mensaje de permisos insuficientes', () => {
+    const error = { message: 'Request failed with status code 403', response: { status: 403 } }
+    expect(toFriendlyErrorMessage(error)).toBe('No tienes permisos para realizar esta acción')
+  })
+
   it('traduce un 404 a "No se encontró el recurso"', () => {
     const error = { message: 'Request failed with status code 404', response: { status: 404 } }
     expect(toFriendlyErrorMessage(error)).toBe('No se encontró el recurso')

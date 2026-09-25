@@ -11,7 +11,10 @@ export const fetchAuthors = createAsyncThunk(
       const authors = [...new Set(data.map((bp) => bp.author))]
       return { authors, items: data }
     } catch (err) {
-      return rejectWithValue(toFriendlyErrorMessage(err))
+      if (err.unsupported) {
+        return rejectWithValue({ unsupported: true })
+      }
+      return rejectWithValue({ message: toFriendlyErrorMessage(err) })
     }
   },
 )
@@ -75,8 +78,13 @@ const slice = createSlice({
         s.all = a.payload.items
       })
       .addCase(fetchAuthors.rejected, (s, a) => {
-        s.status.authors = 'failed'
-        s.error.authors = a.payload
+        if (a.payload?.unsupported) {
+          s.status.authors = 'unsupported'
+          s.error.authors = null
+        } else {
+          s.status.authors = 'failed'
+          s.error.authors = a.payload?.message
+        }
       })
       .addCase(fetchByAuthor.pending, (s) => {
         s.status.byAuthor = 'loading'
