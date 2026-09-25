@@ -37,4 +37,15 @@ describe('toFriendlyErrorMessage', () => {
       'Ocurrió un error inesperado. Intenta de nuevo más tarde.',
     )
   })
+
+  it('usa el mensaje del error cuando está marcado como "unsupported"', () => {
+    const error = new Error('Este backend no soporta actualizar blueprints')
+    error.unsupported = true
+    expect(toFriendlyErrorMessage(error)).toBe('Este backend no soporta actualizar blueprints')
+  })
+
+  it('devuelve un mensaje por defecto si "unsupported" no trae mensaje', () => {
+    const error = { unsupported: true }
+    expect(toFriendlyErrorMessage(error)).toBe('Esta acción no está disponible con este backend')
+  })
 })

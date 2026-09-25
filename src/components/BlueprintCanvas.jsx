@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-export default function BlueprintCanvas({ id = "canvas-blueprint", points = [], width = 520, height = 360 }) {
+export default function BlueprintCanvas({
+  id = 'canvas-blueprint',
+  points = [],
+  width = 520,
+  height = 360,
+  editable = false,
+  onAddPoint,
+}) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -44,14 +51,27 @@ export default function BlueprintCanvas({ id = "canvas-blueprint", points = [], 
     }
   }, [points])
 
+  const handleClick = (e) => {
+    if (!editable || !onAddPoint) return
+    const canvas = ref.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = rect.width ? canvas.width / rect.width : 1
+    const scaleY = rect.height ? canvas.height / rect.height : 1
+    const x = Math.round((e.clientX - rect.left) * scaleX)
+    const y = Math.round((e.clientY - rect.top) * scaleY)
+    onAddPoint({ x, y })
+  }
+
   return (
     <canvas
       ref={ref}
       width={width}
       height={height}
       id={id}
-      className="canvas-blueprint"
+      className={`canvas-blueprint${editable ? ' canvas-editable' : ''}`}
       style={{ maxWidth: width }}
+      onClick={handleClick}
     />
   )
 }

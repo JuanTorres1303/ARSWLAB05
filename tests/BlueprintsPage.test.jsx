@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore, createSelector, createSlice } from '@reduxjs/toolkit'
@@ -9,6 +9,8 @@ vi.mock('../src/features/blueprints/blueprintsSlice.js', () => ({
   fetchAuthors: () => ({ type: 'blueprints/fetchAuthors' }),
   fetchByAuthor: (author) => ({ type: 'blueprints/fetchByAuthor', payload: author }),
   fetchBlueprint: (payload) => ({ type: 'blueprints/fetchBlueprint', payload }),
+  updateBlueprint: (payload) => ({ type: 'blueprints/updateBlueprint', payload }),
+  deleteBlueprint: (payload) => ({ type: 'blueprints/deleteBlueprint', payload }),
   selectTopBlueprints: createSelector(
     [(state) => state.blueprints.all],
     (all) => [...(all || [])].sort((a, b) => (b.points?.length || 0) - (a.points?.length || 0)).slice(0, 5),
@@ -33,6 +35,8 @@ function makeStore(preloaded) {
 }
 
 describe('BlueprintsPage', () => {
+  beforeEach(() => localStorage.clear())
+
   it('despacha fetchByAuthor al hacer click en Get blueprints', () => {
     const store = makeStore()
     const spy = vi.spyOn(store, 'dispatch')
@@ -229,5 +233,68 @@ describe('BlueprintsPage', () => {
 
     expect(screen.getByText(/Busca un autor para ver sus planos/i)).toBeInTheDocument()
     expect(screen.queryByText(/Total user points/i)).not.toBeInTheDocument()
+  })
+
+  it('no muestra los botones Editar/Eliminar en la tabla sin sesión iniciada', () => {
+    const store = makeStore({ byAuthor: { jdoe: [{ author: 'jdoe', name: 'house', points: [] }] } })
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+
+    expect(screen.getByText('Open')).toBeInTheDocument()
+    expect(screen.queryByText('Editar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
+  })
+
+  it('muestra los botones Editar/Eliminar en la tabla con sesión iniciada', () => {
+    localStorage.setItem('token', 'abc123')
+    const store = makeStore({ byAuthor: { jdoe: [{ author: 'jdoe', name: 'house', points: [] }] } })
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+
+    expect(screen.getByText('Editar')).toBeInTheDocument()
+    expect(screen.getByText('Eliminar')).toBeInTheDocument()
+  })
+
+  it('al hacer click en Eliminar abre un diálogo de confirmación propio (no window.confirm) y Cancelar lo cierra sin despachar', () => {
+    localStorage.setItem('token', 'abc123')
+    const alertSpy = vi.spyOn(window, 'confirm').mockImplementation(() => {
+      throw new Error('no debería usarse window.confirm')
+    })
+    const store = makeStore({ byAuthor: { jdoe: [{ author: 'jdoe', name: 'house', points: [] }] } })
+    const spy = vi.spyOn(store, 'dispatch')
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+    spy.mockClear()
+
+    fireEvent.click(screen.getByText('Eliminar'))
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/¿Eliminar "house" de jdoe\?/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Cancelar'))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(spy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'blueprints/deleteBlueprint' }),
+    )
+    alertSpy.mockRestore()
   })
 })

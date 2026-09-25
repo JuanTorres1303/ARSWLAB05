@@ -26,11 +26,11 @@ describe('blueprintsService', () => {
     expect(blueprintsService).toBe(apiClient)
   })
 
-  it('apimock y apiClient exponen la misma interfaz de 4 métodos', async () => {
+  it('apimock y apiClient exponen la misma interfaz de 6 métodos', async () => {
     const { default: apiMock } = await import('../src/services/apimock.js')
     const { default: apiClient } = await import('../src/services/apiClient.js')
 
-    const methods = ['getAll', 'getByAuthor', 'getByAuthorAndName', 'create']
+    const methods = ['getAll', 'getByAuthor', 'getByAuthorAndName', 'create', 'update', 'remove']
     for (const method of methods) {
       expect(typeof apiMock[method]).toBe('function')
       expect(typeof apiClient[method]).toBe('function')

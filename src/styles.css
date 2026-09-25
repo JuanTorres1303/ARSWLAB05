@@ -138,6 +138,11 @@ nav a.active {
   border-bottom: 1px solid #1f2937;
 }
 
+.table td .btn {
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
 .table .align-right {
   text-align: right;
 }
@@ -198,6 +203,63 @@ nav a.active {
   border: 1px solid #334155;
   border-radius: 12px;
   width: 100%;
+}
+
+.canvas-editable {
+  cursor: crosshair;
+}
+
+.canvas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn.danger {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+.btn.danger:hover {
+  background: #991b1b;
+  border-color: #b91c1c;
+}
+
+.unsaved-badge {
+  margin-top: 8px;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.saved-badge {
+  margin-top: 8px;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.modal {
+  max-width: 420px;
+  width: 100%;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 @media (max-width: 800px) {

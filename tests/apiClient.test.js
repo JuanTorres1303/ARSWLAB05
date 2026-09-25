@@ -4,6 +4,8 @@ vi.mock('../src/services/http.js', () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
   },
 }))
 
@@ -14,6 +16,8 @@ describe('apiClient', () => {
   beforeEach(() => {
     http.get.mockReset()
     http.post.mockReset()
+    http.put.mockReset()
+    http.delete.mockReset()
   })
 
   it('getAll acepta una respuesta directa (sin envoltura)', async () => {
@@ -117,5 +121,51 @@ describe('apiClient', () => {
     const result = await apiClient.create({ author: 'jdoe', name: 'house', points: [] })
 
     expect(result).toBeUndefined()
+  })
+
+  it('update envía PUT a la ruta autor/nombre con los puntos como string', async () => {
+    const points = [{ x: 1, y: 1 }]
+    http.put.mockResolvedValueOnce({ data: { author: 'jdoe', name: 'house', points } })
+
+    const result = await apiClient.update('jdoe', 'house', { points })
+
+    expect(http.put).toHaveBeenCalledWith('/api/blueprints/jdoe/house', {
+      author: 'jdoe',
+      name: 'house',
+      points: JSON.stringify(points),
+    })
+    expect(result).toEqual({ author: 'jdoe', name: 'house', points })
+  })
+
+  it('update marca el error como "unsupported" cuando el backend responde 404 o 405', async () => {
+    http.put.mockRejectedValueOnce({ response: { status: 404 } })
+    await expect(apiClient.update('jdoe', 'house', { points: [] })).rejects.toMatchObject({
+      unsupported: true,
+    })
+
+    http.put.mockRejectedValueOnce({ response: { status: 405 } })
+    await expect(apiClient.update('jdoe', 'house', { points: [] })).rejects.toMatchObject({
+      unsupported: true,
+    })
+  })
+
+  it('update propaga otros errores sin marcarlos como unsupported', async () => {
+    http.put.mockRejectedValueOnce({ response: { status: 500 } })
+    const error = await apiClient.update('jdoe', 'house', { points: [] }).catch((e) => e)
+    expect(error.unsupported).toBeUndefined()
+  })
+
+  it('remove envía DELETE a la ruta autor/nombre', async () => {
+    http.delete.mockResolvedValueOnce({ data: { author: 'jdoe', name: 'house' } })
+
+    const result = await apiClient.remove('jdoe', 'house')
+
+    expect(http.delete).toHaveBeenCalledWith('/api/blueprints/jdoe/house')
+    expect(result).toEqual({ author: 'jdoe', name: 'house' })
+  })
+
+  it('remove marca el error como "unsupported" cuando el backend responde 404 o 405', async () => {
+    http.delete.mockRejectedValueOnce({ response: { status: 404 } })
+    await expect(apiClient.remove('jdoe', 'house')).rejects.toMatchObject({ unsupported: true })
   })
 })

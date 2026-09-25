@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import http from '../services/http.js'
+import authService from '../services/authService.js'
 import { extractToken, setToken } from '../auth/session.js'
 
 export default function LoginPage() {
@@ -14,7 +14,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     try {
-      const { data } = await http.post('/auth/login', { username, password })
+      const data = await authService.login(username, password)
       const token = extractToken(data)
       if (!token) {
         setError('La respuesta del servidor no incluyó un token válido')

@@ -51,4 +51,33 @@ describe('apimock', () => {
       apimock.create({ author: 'dup-author', name: 'dup-plan', points: [] }),
     ).rejects.toMatchObject({ response: { status: 409 } })
   })
+
+  it('update reemplaza los puntos de un blueprint existente', async () => {
+    const newPoints = [{ x: 1, y: 1 }]
+    const updated = await apimock.update('jdoe', 'house', { points: newPoints })
+    expect(updated).toEqual({ author: 'jdoe', name: 'house', points: newPoints })
+
+    const stored = await apimock.getByAuthorAndName('jdoe', 'house')
+    expect(stored.points).toEqual(newPoints)
+  })
+
+  it('update lanza un error 404 si el blueprint no existe', async () => {
+    await expect(
+      apimock.update('jdoe', 'no-existe', { points: [] }),
+    ).rejects.toMatchObject({ response: { status: 404 } })
+  })
+
+  it('remove elimina un blueprint existente', async () => {
+    const result = await apimock.remove('jdoe', 'garage')
+    expect(result).toEqual({ author: 'jdoe', name: 'garage' })
+    await expect(apimock.getByAuthorAndName('jdoe', 'garage')).rejects.toMatchObject({
+      response: { status: 404 },
+    })
+  })
+
+  it('remove lanza un error 404 si el blueprint no existe', async () => {
+    await expect(apimock.remove('jdoe', 'no-existe')).rejects.toMatchObject({
+      response: { status: 404 },
+    })
+  })
 })

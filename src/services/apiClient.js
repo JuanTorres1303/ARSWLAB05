@@ -51,4 +51,45 @@ async function create(payload) {
   return unwrap(response)
 }
 
-export default { getAll, getByAuthor, getByAuthorAndName, create }
+async function update(author, name, payload) {
+  // Igual que en create: el backend real solo entendería strings en el body,
+  // pero además el LAB04 no expone PUT, así que esto solo funcionará contra
+  // un backend que implemente esta ruta (o contra el mock).
+  const body = {
+    author: payload.author ?? author,
+    name: payload.name ?? name,
+    points: JSON.stringify(payload.points || []),
+  }
+  try {
+    const response = await http.put(
+      `/api/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`,
+      body,
+    )
+    return unwrap(response)
+  } catch (err) {
+    if (err.response && (err.response.status === 404 || err.response.status === 405)) {
+      const unsupportedError = new Error('Este backend no soporta actualizar blueprints')
+      unsupportedError.unsupported = true
+      throw unsupportedError
+    }
+    throw err
+  }
+}
+
+async function remove(author, name) {
+  try {
+    const response = await http.delete(
+      `/api/blueprints/${encodeURIComponent(author)}/${encodeURIComponent(name)}`,
+    )
+    return unwrap(response)
+  } catch (err) {
+    if (err.response && (err.response.status === 404 || err.response.status === 405)) {
+      const unsupportedError = new Error('Este backend no soporta eliminar blueprints')
+      unsupportedError.unsupported = true
+      throw unsupportedError
+    }
+    throw err
+  }
+}
+
+export default { getAll, getByAuthor, getByAuthorAndName, create, update, remove }

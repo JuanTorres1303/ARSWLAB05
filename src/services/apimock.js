@@ -103,4 +103,27 @@ async function create(payload) {
   return clone(blueprint)
 }
 
-export default { getAll, getByAuthor, getByAuthorAndName, create }
+async function update(author, name, payload) {
+  const idx = blueprints.findIndex((bp) => bp.author === author && bp.name === name)
+  if (idx === -1) {
+    const error = new Error('Blueprint not found')
+    error.response = { status: 404 }
+    throw error
+  }
+  const updated = { author, name, points: payload.points || [] }
+  blueprints = blueprints.map((bp, i) => (i === idx ? updated : bp))
+  return clone(updated)
+}
+
+async function remove(author, name) {
+  const exists = blueprints.some((bp) => bp.author === author && bp.name === name)
+  if (!exists) {
+    const error = new Error('Blueprint not found')
+    error.response = { status: 404 }
+    throw error
+  }
+  blueprints = blueprints.filter((bp) => !(bp.author === author && bp.name === name))
+  return { author, name }
+}
+
+export default { getAll, getByAuthor, getByAuthorAndName, create, update, remove }
