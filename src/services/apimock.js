@@ -110,7 +110,11 @@ async function update(author, name, payload) {
     error.response = { status: 404 }
     throw error
   }
-  const updated = { author, name, points: payload.points || [] }
+  const updated = {
+    author: payload.author || author,
+    name: payload.name || name,
+    points: payload.points || [],
+  }
   blueprints = blueprints.map((bp, i) => (i === idx ? updated : bp))
   return clone(updated)
 }

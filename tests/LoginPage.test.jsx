@@ -20,8 +20,6 @@ describe('LoginPage', () => {
     localStorage.clear()
     http.post.mockReset()
     mockNavigate.mockReset()
-    // Estos tests ejercitan el flujo contra backend real: el login mock
-    // (VITE_USE_MOCK=true) se prueba aparte, más abajo.
     vi.stubEnv('VITE_USE_MOCK', 'false')
   })
 

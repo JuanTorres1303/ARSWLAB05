@@ -7,7 +7,6 @@ export const fetchAuthors = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const data = await blueprintsService.getAll()
-      // Expecting API returns array of {author, name, points}
       const authors = [...new Set(data.map((bp) => bp.author))]
       return { authors, items: data }
     } catch (err) {
@@ -55,10 +54,20 @@ export const createBlueprint = createAsyncThunk(
 
 export const updateBlueprint = createAsyncThunk(
   'blueprints/updateBlueprint',
-  async ({ author, name, points }, { rejectWithValue }) => {
+  async ({ author, name, newName, points }, { rejectWithValue }) => {
     try {
-      const updated = await blueprintsService.update(author, name, { author, name, points })
-      return { author, name, points: updated?.points ?? points }
+      const targetName = newName && newName.trim() && newName !== name ? newName.trim() : name
+      const updated = await blueprintsService.update(author, name, {
+        author,
+        name: targetName,
+        points,
+      })
+      return {
+        author,
+        name,
+        newName: targetName !== name ? (updated?.name ?? targetName) : undefined,
+        points: updated?.points ?? points,
+      }
     } catch (err) {
       return rejectWithValue(toFriendlyErrorMessage(err))
     }
@@ -84,8 +93,6 @@ const initialState = {
   current: null,
   status: { authors: 'idle', byAuthor: 'idle', current: 'idle', update: 'idle', delete: 'idle' },
   error: { authors: null, byAuthor: null, current: null, update: null, delete: null },
-  // Guarda una copia del estado previo a un update/delete optimista para
-  // poder revertirlo si el backend rechaza la operación.
   snapshots: {},
 }
 
@@ -100,6 +107,11 @@ function isSameBlueprint(bp, author, name) {
 function withUpdatedPoints(list, author, name, points) {
   if (!list) return list
   return list.map((bp) => (isSameBlueprint(bp, author, name) ? { ...bp, points } : bp))
+}
+
+function withUpdatedItem(list, author, name, changes) {
+  if (!list) return list
+  return list.map((bp) => (isSameBlueprint(bp, author, name) ? { ...bp, ...changes } : bp))
 }
 
 function withoutBlueprint(list, author, name) {
@@ -180,12 +192,13 @@ const slice = createSlice({
         s.error.update = null
       })
       .addCase(updateBlueprint.fulfilled, (s, a) => {
-        const { author, name, points } = a.payload
+        const { author, name, newName, points } = a.payload
+        const changes = newName ? { points, name: newName } : { points }
         if (isSameBlueprint(s.current, author, name)) {
-          s.current = { ...s.current, points }
+          s.current = { ...s.current, ...changes }
         }
-        s.byAuthor[author] = withUpdatedPoints(s.byAuthor[author], author, name, points)
-        s.all = withUpdatedPoints(s.all, author, name, points)
+        s.byAuthor[author] = withUpdatedItem(s.byAuthor[author], author, name, changes)
+        s.all = withUpdatedItem(s.all, author, name, changes)
         s.status.update = 'succeeded'
         delete s.snapshots[snapshotKey(author, name)]
       })

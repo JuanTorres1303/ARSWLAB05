@@ -10,8 +10,6 @@ async function mockLogin(username, password) {
     error.response = { status: 401 }
     throw error
   }
-  // El mock acepta cualquier usuario/contraseña no vacíos: solo sirve para
-  // poder probar las rutas protegidas sin depender del backend del LAB04.
   return { access_token: `mock-token-${username}` }
 }
 

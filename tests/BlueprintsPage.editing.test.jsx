@@ -35,8 +35,9 @@ async function openHouseBlueprint(store) {
   fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
   fireEvent.click(screen.getByText(/Get blueprints/i))
   await screen.findByText('house')
-  fireEvent.click(screen.getByText('Open'))
+  fireEvent.click(screen.getByText('Editar'))
   await screen.findByText('Sin cambios pendientes')
+  expect(screen.getByText('Modo: Edición')).toBeInTheDocument()
 }
 
 describe('BlueprintsPage: edición interactiva del canvas y CRUD optimista (store real)', () => {
@@ -80,8 +81,6 @@ describe('BlueprintsPage: edición interactiva del canvas y CRUD optimista (stor
 
     fireEvent.click(screen.getByText('Deshacer último punto'))
 
-    // El punto agregado ya no debería mandarse al guardar: verificamos que
-    // el payload de update solo contenga el punto original.
     blueprintsService.update.mockResolvedValue({
       author: 'jdoe',
       name: 'house',
@@ -123,10 +122,8 @@ describe('BlueprintsPage: edición interactiva del canvas y CRUD optimista (stor
     fireEvent.click(screen.getByText('Guardar'))
 
     await waitFor(() => expect(store.getState().blueprints.status.update).toBe('failed'))
-    // El estado optimista debe haberse revertido a los puntos originales.
     expect(store.getState().blueprints.current.points).toEqual([{ x: 1, y: 1 }])
     expect(store.getState().blueprints.byAuthor.jdoe[0].points).toEqual([{ x: 1, y: 1 }])
-    // El borrador local conserva el intento fallido para poder reintentar.
     expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
 
     blueprintsService.update.mockResolvedValueOnce({
@@ -162,6 +159,55 @@ describe('BlueprintsPage: edición interactiva del canvas y CRUD optimista (stor
     expect(store.getState().blueprints.byAuthor.jdoe).toHaveLength(1)
     expect(screen.getByText('house')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('"Open" abre el plano en modo solo lectura: sin controles de edición y sin poder agregar puntos por clic', async () => {
+    const store = makeStore()
+    renderWithStore(store)
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+    await screen.findByText('house')
+
+    fireEvent.click(screen.getByText('Open'))
+    await screen.findByText('Modo: Solo lectura')
+
+    expect(screen.queryByText('Guardar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Deshacer último punto')).not.toBeInTheDocument()
+    expect(screen.queryByText('Descartar cambios')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Nombre del plano actual')).toHaveAttribute('readonly')
+
+    const canvas = document.getElementById('canvas-blueprint')
+    expect(canvas.className).not.toContain('canvas-editable')
+    fireEvent.click(canvas, { clientX: 200, clientY: 80 })
+    expect(screen.queryByText('Cambios sin guardar')).not.toBeInTheDocument()
+  })
+
+  it('"Editar" abre el plano en modo edición con el nombre editable y permite renombrarlo al guardar', async () => {
+    const store = makeStore()
+    await openHouseBlueprint(store)
+
+    const nameInput = screen.getByLabelText('Nombre del plano (edítalo para renombrar)')
+    expect(nameInput).not.toHaveAttribute('readonly')
+    expect(nameInput).toHaveValue('house')
+
+    fireEvent.change(nameInput, { target: { value: 'house-renamed' } })
+    expect(await screen.findByText('Cambios sin guardar')).toBeInTheDocument()
+
+    blueprintsService.update.mockResolvedValueOnce({
+      author: 'jdoe',
+      name: 'house-renamed',
+      points: [{ x: 1, y: 1 }],
+    })
+    fireEvent.click(screen.getByText('Guardar'))
+
+    await waitFor(() => expect(blueprintsService.update).toHaveBeenCalled())
+    expect(blueprintsService.update).toHaveBeenCalledWith('jdoe', 'house', {
+      author: 'jdoe',
+      name: 'house-renamed',
+      points: [{ x: 1, y: 1 }],
+    })
+    await waitFor(() => expect(store.getState().blueprints.current.name).toBe('house-renamed'))
+    expect(store.getState().blueprints.byAuthor.jdoe[0].name).toBe('house-renamed')
   })
 
   it('deleteBlueprint exitoso: el blueprint desaparece de la lista tras confirmar', async () => {

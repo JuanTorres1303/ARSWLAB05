@@ -20,25 +20,27 @@ export default function BlueprintsPage() {
   const [authorInput, setAuthorInput] = useState('')
   const [selectedAuthor, setSelectedAuthor] = useState('')
   const [selectedBlueprint, setSelectedBlueprint] = useState(null)
+  const [mode, setMode] = useState(null)
   const [draftPoints, setDraftPoints] = useState([])
+  const [draftName, setDraftName] = useState('')
   const [dirty, setDirty] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [confirmTarget, setConfirmTarget] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
   const [openedKey, setOpenedKey] = useState(null)
   const items = byAuthor[selectedAuthor] || []
+  const isEditing = mode === 'edit' && isAuthenticated
 
   useEffect(() => {
     dispatch(fetchAuthors())
   }, [dispatch])
 
-  // Solo reinicia el borrador cuando cambia el blueprint abierto (autor+nombre),
-  // no en cada cambio optimista de "current" mientras se guarda/revierte.
   useEffect(() => {
     const key = current ? `${current.author}::${current.name}` : null
     if (key !== openedKey) {
       setOpenedKey(key)
       setDraftPoints(current?.points || [])
+      setDraftName(current?.name || '')
       setDirty(false)
       setSaveError(null)
     }
@@ -71,6 +73,14 @@ export default function BlueprintsPage() {
   const openBlueprint = (bp) => {
     const target = { author: bp.author || selectedAuthor, name: bp.name }
     setSelectedBlueprint(target)
+    setMode('view')
+    dispatch(fetchBlueprint(target))
+  }
+
+  const editBlueprint = (bp) => {
+    const target = { author: bp.author || selectedAuthor, name: bp.name }
+    setSelectedBlueprint(target)
+    setMode('edit')
     dispatch(fetchBlueprint(target))
   }
 
@@ -81,7 +91,7 @@ export default function BlueprintsPage() {
   const retryFetchAuthors = () => dispatch(fetchAuthors())
 
   const handleAddPoint = (point) => {
-    if (!current) return
+    if (!current || !isEditing) return
     setDraftPoints((prev) => [...prev, point])
     setDirty(true)
   }
@@ -91,8 +101,14 @@ export default function BlueprintsPage() {
     setDirty(true)
   }
 
+  const handleNameChange = (e) => {
+    setDraftName(e.target.value)
+    setDirty(true)
+  }
+
   const handleDiscardChanges = () => {
     setDraftPoints(current?.points || [])
+    setDraftName(current?.name || '')
     setDirty(false)
     setSaveError(null)
   }
@@ -102,7 +118,12 @@ export default function BlueprintsPage() {
     setSaveError(null)
     try {
       await dispatch(
-        updateBlueprint({ author: current.author, name: current.name, points: draftPoints }),
+        updateBlueprint({
+          author: current.author,
+          name: current.name,
+          newName: draftName,
+          points: draftPoints,
+        }),
       ).unwrap()
       setDirty(false)
     } catch (err) {
@@ -191,20 +212,25 @@ export default function BlueprintsPage() {
                     <tr key={bp.name}>
                       <td>{bp.name}</td>
                       <td className="align-right">{bp.points?.length || 0}</td>
-                      <td>
-                        <button className="btn" onClick={() => openBlueprint(bp)}>
-                          Open
-                        </button>
-                        {isAuthenticated && (
-                          <>
-                            <button className="btn" onClick={() => openBlueprint(bp)}>
-                              Editar
-                            </button>
-                            <button className="btn danger" onClick={() => requestDelete(bp)}>
-                              Eliminar
-                            </button>
-                          </>
-                        )}
+                      <td className="col-actions">
+                        <div className="table-actions">
+                          <button className="btn sm" onClick={() => openBlueprint(bp)}>
+                            Open
+                          </button>
+                          {isAuthenticated && (
+                            <>
+                              <button className="btn sm" onClick={() => editBlueprint(bp)}>
+                                Editar
+                              </button>
+                              <button
+                                className="btn sm danger"
+                                onClick={() => requestDelete(bp)}
+                              >
+                                Eliminar
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -263,13 +289,21 @@ export default function BlueprintsPage() {
 
       <section className="card">
         <h3>Current blueprint</h3>
+        {current && mode && (
+          <p className={`mode-badge ${isEditing ? 'mode-edit' : 'mode-view'}`}>
+            {isEditing ? 'Modo: Edición' : 'Modo: Solo lectura'}
+          </p>
+        )}
         <div className="form-field">
-          <label htmlFor="current-blueprint-name">Nombre del plano actual</label>
+          <label htmlFor="current-blueprint-name">
+            {isEditing ? 'Nombre del plano (edítalo para renombrar)' : 'Nombre del plano actual'}
+          </label>
           <input
             id="current-blueprint-name"
             className="input"
-            value={current?.name || ''}
-            readOnly
+            value={isEditing ? draftName : current?.name || ''}
+            onChange={isEditing ? handleNameChange : undefined}
+            readOnly={!isEditing}
           />
         </div>
         {status.current === 'loading' && <p>Cargando plano...</p>}
@@ -281,7 +315,7 @@ export default function BlueprintsPage() {
             </button>
           </div>
         )}
-        {isAuthenticated && current && (
+        {isEditing && current && (
           <p className={dirty ? 'unsaved-badge' : 'saved-badge'}>
             {dirty ? 'Cambios sin guardar' : 'Sin cambios pendientes'}
           </p>
@@ -293,11 +327,14 @@ export default function BlueprintsPage() {
             points={draftPoints}
             width={520}
             height={360}
-            editable={isAuthenticated && !!current}
+            editable={isEditing && !!current}
             onAddPoint={handleAddPoint}
           />
+          {isEditing && current && (
+            <p className="canvas-hint">Haz clic en el lienzo para agregar puntos.</p>
+          )}
         </div>
-        {isAuthenticated && current && (
+        {isEditing && current && (
           <div className="canvas-actions">
             <button
               className="btn primary"

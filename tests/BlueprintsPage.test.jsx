@@ -4,7 +4,6 @@ import { Provider } from 'react-redux'
 import { configureStore, createSelector, createSlice } from '@reduxjs/toolkit'
 import BlueprintsPage from '../src/pages/BlueprintsPage.jsx'
 
-// Mock de thunks/selectores del slice para no requerir backend
 vi.mock('../src/features/blueprints/blueprintsSlice.js', () => ({
   fetchAuthors: () => ({ type: 'blueprints/fetchAuthors' }),
   fetchByAuthor: (author) => ({ type: 'blueprints/fetchByAuthor', payload: author }),
@@ -265,6 +264,31 @@ describe('BlueprintsPage', () => {
 
     expect(screen.getByText('Editar')).toBeInTheDocument()
     expect(screen.getByText('Eliminar')).toBeInTheDocument()
+  })
+
+  it('agrupa Open/Editar/Eliminar en un único contenedor de acciones (una sola fila)', () => {
+    localStorage.setItem('token', 'abc123')
+    const store = makeStore({ byAuthor: { jdoe: [{ author: 'jdoe', name: 'house', points: [] }] } })
+    render(
+      <Provider store={store}>
+        <BlueprintsPage />
+      </Provider>,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText(/Author/i), { target: { value: 'jdoe' } })
+    fireEvent.click(screen.getByText(/Get blueprints/i))
+
+    const openBtn = screen.getByText('Open')
+    const editBtn = screen.getByText('Editar')
+    const deleteBtn = screen.getByText('Eliminar')
+    const actionsCell = openBtn.closest('td')
+    const actionsContainer = openBtn.closest('.table-actions')
+
+    expect(actionsContainer).not.toBeNull()
+    expect(actionsContainer).toBe(editBtn.closest('.table-actions'))
+    expect(actionsContainer).toBe(deleteBtn.closest('.table-actions'))
+    expect(actionsCell.querySelectorAll('button')).toHaveLength(3)
+    expect(openBtn.className).toContain('sm')
   })
 
   it('al hacer click en Eliminar abre un diálogo de confirmación propio (no window.confirm) y Cancelar lo cierra sin despachar', () => {

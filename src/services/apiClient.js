@@ -40,8 +40,6 @@ async function getByAuthorAndName(author, name) {
 }
 
 async function create(payload) {
-  // El endpoint real (@RequestBody Map<String, String>) solo acepta valores
-  // string: un array en "points" hace que Jackson falle con 400 Bad Request.
   const body = {
     author: payload.author,
     name: payload.name,
@@ -52,9 +50,6 @@ async function create(payload) {
 }
 
 async function update(author, name, payload) {
-  // Igual que en create: el backend real solo entendería strings en el body,
-  // pero además el LAB04 no expone PUT, así que esto solo funcionará contra
-  // un backend que implemente esta ruta (o contra el mock).
   const body = {
     author: payload.author ?? author,
     name: payload.name ?? name,
